@@ -122,7 +122,7 @@ This will:
 - Tokenize the text
 - Save the cleaned data to `data/processed/preprocessed_dataset.csv`
 
-⚠️ Note that the current preprocessing module (defined in `src/preprocessing/tokenizer.py`) is only a demo. Based on our results we will have to tune our preprocessing later. This means that we will also likely save multiple versions of preprocessed dataset later; we should figure out a way to do this systematically.
+⚠️ Note that the current preprocessing module (defined in `src/preprocessing/tokenizer.py`) is only an initial version. Based on our results we will have to tune our preprocessing later. This means that we will also likely save multiple versions of preprocessed dataset later; we should figure out a way to do this systematically.
 
 ### 3. Check results
 Run all blocks in `notebooks/test_install.ipynb`. If everything worked you should see the same output.
