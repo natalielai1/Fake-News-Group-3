@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import re
+import numpy as np
 import pandas as pd
 
 # --- Simple regex tokenizer ---
@@ -15,7 +16,7 @@ def simple_tokenize(s: str):
 
 def main():
     # 1) Load the Kaggle dataset
-    df = pd.read_csv("WELFake_Dataset.csv")
+    df = pd.read_csv("data/raw/WELFake_Dataset.csv")
 
     # 2) Rename the "Unnamed: 0" column to "id"
     #    (We know this is the serial/index column in the Kaggle dataset.)
@@ -28,7 +29,7 @@ def main():
     out = df[["id", "title", "text", "tokens", "label"]]
 
     # 5) Save the cleaned DataFrame to a new CSV
-    out.to_csv("cleaned_fake_news.csv", index=False)
+    out.to_csv("data/processed/cleaned_fake_news.csv", index=False)
 
     # 6) Print confirmation so we know it worked
     print(f"Saved {len(out)} rows → cleaned_fake_news.csv")
