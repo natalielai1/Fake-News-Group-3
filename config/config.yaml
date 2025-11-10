@@ -1,0 +1,64 @@
+# Configuration file for Fake News Detection project
+
+# Data paths
+data:
+  raw_data_dir: "data/raw"
+  processed_data_dir: "data/processed"
+  external_data_dir: "data/external"
+  
+  # Dataset filenames
+  kaggle_dataset: "WELFake_Dataset.csv"
+  cleaned_dataset: "cleaned_fake_news.csv"
+
+# Preprocessing settings
+preprocessing:
+  tokenization:
+    method: "regex"  # Options: regex, nltk, spacy
+    lowercase: false
+    remove_stopwords: false
+  
+  text_cleaning:
+    remove_urls: true
+    remove_special_chars: false
+    min_word_length: 1
+
+# Feature engineering
+features:
+  tfidf:
+    max_features: 5000
+    ngram_range: [1, 2]
+  
+  word_embeddings:
+    method: "word2vec"  # Options: word2vec, glove, fasttext
+    dimension: 300
+
+# Model settings
+models:
+  random_seed: 42
+  test_size: 0.2
+  validation_size: 0.1
+  
+  # Model-specific configurations can be added here
+  logistic_regression:
+    C: 1.0
+    max_iter: 1000
+  
+  random_forest:
+    n_estimators: 100
+    max_depth: null
+
+# Results and outputs
+results:
+  figures_dir: "results/figures"
+  models_dir: "results/models"
+  metrics_dir: "results/metrics"
+  
+  save_predictions: true
+  save_model_artifacts: true
+
+# Logging
+logging:
+  level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+
