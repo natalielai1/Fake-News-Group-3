@@ -1,2 +1,84 @@
-data/archive.zip
+# Data files - don't commit large datasets
+data/raw/*
+data/processed/*
+data/external/*
 *.csv
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.json.gz
+
+# Keep the directory structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# Model files - can be large
+results/models/*.pt
+results/models/*.pth
+results/models/*.h5
+results/models/*.pkl
+*.model
+*.weights
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+# Uncomment to track notebooks:
+# !notebooks/*.ipynb
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs and temp files
+*.log
+logs/
+temp/
+tmp/
+
+# MLflow
+mlruns/
+
+# Weights & Biases
+wandb/
