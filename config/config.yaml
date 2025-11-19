@@ -8,7 +8,7 @@ data:
   
   # Dataset filenames
   kaggle_dataset: "WELFake_Dataset.csv"
-  cleaned_dataset: "cleaned_fake_news.csv"
+  cleaned_dataset: "preprocessed_dataset.csv"
 
 # Preprocessing settings
 preprocessing:
@@ -38,14 +38,34 @@ models:
   test_size: 0.2
   validation_size: 0.1
   
-  # Model-specific configurations can be added here
+  # Model-specific configurations
   logistic_regression:
     C: 1.0
     max_iter: 1000
+    solver: "lbfgs"
   
   random_forest:
     n_estimators: 100
     max_depth: null
+    min_samples_split: 2
+    
+  lgbm:
+    n_estimators: 100
+    learning_rate: 0.1
+    num_leaves: 31
+    objective: "binary"
+    
+  knn:
+    n_neighbors: 5
+    weights: "uniform"
+    algorithm: "auto"
+    
+  lstm:
+    embedding_dim: 100
+    hidden_dim: 64
+    dropout: 0.5
+    epochs: 5
+    batch_size: 32
 
 # Results and outputs
 results:
