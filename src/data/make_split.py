@@ -3,6 +3,7 @@ import yaml
 import os
 from sklearn.model_selection import train_test_split
 import argparse
+from src.preprocessing import clean_source_text
 
 def load_config(config_path="config/config.yaml"):
     with open(config_path, "r") as f:
@@ -39,6 +40,10 @@ def make_split(
     # Load data
     print(f"Loading data from {input_path}...")
     df = pd.read_csv(input_path)
+    
+    # Apply leakage cleaning to the 'text' column permanently
+    print("Applying source leakage cleaning to 'text' column...")
+    df['text'] = df['text'].apply(clean_source_text)
     
     # Deduplicate
     print("Checking for duplicates...")
