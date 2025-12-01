@@ -5,6 +5,7 @@ import os
 import joblib
 from gensim.models import Word2Vec
 import nltk
+from src.preprocessing import clean_source_text
 
 # Ensure nltk data is available (simple tokenizer)
 try:
@@ -34,16 +35,22 @@ def create_tfidf_features(texts, max_features=5000):
     - max_features limits vocabulary size.
     - ngram_range=(1,2) includes unigrams + bigrams.
     - stop_words="english" removes common stopwords.
+    - Includes source leakage cleaning.
+    
     Returns:
         X: sparse matrix of TF-IDF features
         vectorizer: trained TF-IDF vectorizer
     """
+    # Apply leakage cleaning
+    print("Applying leakage cleaning (removing source attribution)...")
+    cleaned_texts = [clean_source_text(text) for text in texts]
+    
     vectorizer = TfidfVectorizer(
         max_features=max_features,
         ngram_range=(1, 2),
         stop_words="english"
     )
-    X = vectorizer.fit_transform(texts)
+    X = vectorizer.fit_transform(cleaned_texts)
     return X, vectorizer
 
 
@@ -124,15 +131,21 @@ def run_feature_engineering():
     # --- TF-IDF ---
     print("Creating TF-IDF features (fit on training text only)...")
     X_train_tfidf, tfidf_vectorizer = create_tfidf_features(X_train_text)
-    X_test_tfidf = tfidf_vectorizer.transform(X_test_text)
+    
+    # Clean test text as well to match training distribution
+    X_test_text_cleaned = [clean_source_text(text) for text in X_test_text]
+    X_test_tfidf = tfidf_vectorizer.transform(X_test_text_cleaned)
 
     # --- Word2Vec / Sentence2Vec ---
     print("Creating Word2Vec/Sentence2Vec features...")
-    X_train_w2v, w2v_model = create_word2vec_features(X_train_text)
+    
+    # Clean text for Word2Vec too
+    X_train_text_cleaned = [clean_source_text(text) for text in X_train_text]
+    X_train_w2v, w2v_model = create_word2vec_features(X_train_text_cleaned)
     
     # Transform test text using the *same* trained model
     print("Generating Sentence2Vec features for test set...")
-    X_test_w2v = np.array([get_sentence_vector(text, w2v_model) for text in X_test_text])
+    X_test_w2v = np.array([get_sentence_vector(text, w2v_model) for text in X_test_text_cleaned])
 
     # Ensure directory exists
     processed_dir = "data/processed"

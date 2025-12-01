@@ -40,6 +40,48 @@ WORD_RE = re.compile(r"[A-Za-z0-9']+")
 STOPWORDS = set(stopwords.words('english'))
 
 
+def clean_source_text(text: str) -> str:
+    """
+    Remove source attribution (e.g. 'WASHINGTON (Reuters) - ') from the start of text.
+    This is critical to prevent data leakage where the source name reveals the label.
+    """
+    if text is None:
+        return ""
+        
+    text = str(text)
+    
+    # Pattern 1: "CITY (Reuters) - " or "(Reuters) - "
+    # Matches start of string, optional location, (Source), hyphen
+    # Be careful not to delete too much.
+    # Look for (Source) followed by -
+    
+    # Regex explanation:
+    # ^                 Start of string
+    # (?:[A-Z\s]+)?     Optional location (UPPERCASE text + spaces) - non-capturing
+    # \s*               Optional spaces
+    # \(                Literal (
+    # (?:Reuters|AFP|AP|CNN|BBC|Al Jazeera)  Common news sources
+    # \)                Literal )
+    # \s*               Optional spaces
+    # -                 Hyphen
+    # \s*               Optional spaces
+    
+    # More aggressive pattern: Remove anything up to the first " - " if it contains "Reuters"
+    
+    # Specific Reuters cleaning (most common leak)
+    # Matches: "WASHINGTON (Reuters) - ", "BERLIN (Reuters) - ", "(Reuters) -"
+    # Also includes AP, AFP, UPI which are common in real news datasets
+    # Now robust to case variations like "REUTERS", "reuters"
+    reuters_pattern = r"^([A-Z\s]+)?\s*\((Reuters|AP|AFP|UPI)\)\s*-\s*"
+    text = re.sub(reuters_pattern, "", text, flags=re.IGNORECASE)
+    
+    # Also just "Reuters" at the very start if followed by punctuation or space
+    # But be careful not to remove "Reuters reported that..." if it's part of the sentence structure.
+    # The "(Reuters) -" pattern is the standard byline.
+    
+    return text
+
+
 def simple_tokenize(text: str) -> List[str]:
     """
     Convert a text string into a list of word-like tokens.

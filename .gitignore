@@ -52,7 +52,7 @@ htmlcov/
 .ipynb_checkpoints/
 *.ipynb
 # Uncomment to track notebooks:
-# !notebooks/*.ipynb
+!notebooks/*.ipynb
 
 # Environment
 .env
@@ -81,4 +81,4 @@ tmp/
 mlruns/
 
 # Weights & Biases
-wandb/
+wandbg/

@@ -12,6 +12,7 @@ from .tokenizer import (
     preprocess_text,
     tokenize_dataframe,
     preprocess_dataframe,
+    clean_source_text,
     STOPWORDS,
 )
 
@@ -27,5 +28,6 @@ __all__ = [
     'preprocess_text',
     'tokenize_dataframe',
     'preprocess_dataframe',
+    'clean_source_text',
     'STOPWORDS',
 ]
