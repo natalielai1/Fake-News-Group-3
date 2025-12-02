@@ -4,11 +4,11 @@ import os
 import pandas as pd
 import numpy as np
 import joblib
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 import lightgbm as lgb
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 def load_config(config_path="config/config.yaml"):
     with open(config_path, "r") as f:
@@ -17,30 +17,16 @@ def load_config(config_path="config/config.yaml"):
 def load_data(processed_dir):
     """Load training features and labels."""
     # For simplicity, we'll use TF-IDF features for standard ML models
-    # In a real scenario, you might choose between TF-IDF and Word2Vec based on the model
     print("Loading TF-IDF features...")
-    train_data = np.load(os.path.join(processed_dir, "features_train_tfidf.npz"))
-    test_data = np.load(os.path.join(processed_dir, "features_test_tfidf.npz"))
+    train_data = np.load(os.path.join(processed_dir, "features_train_tfidf.npz"), allow_pickle=True)
+    test_data = np.load(os.path.join(processed_dir, "features_test_tfidf.npz"), allow_pickle=True)
     
     X_train = train_data["X"]
     y_train = train_data["y"]
     X_test = test_data["X"]
     y_test = test_data["y"]
     
-    # Convert sparse matrix if necessary (some models might need dense)
-    # X_train = X_train.item() # If saved as object array
-    # But np.savez with sparse matrix usually requires careful handling.
-    # Let's assume for now it loads correctly as a sparse matrix or we might need to use scipy.sparse.load_npz if we saved it that way.
-    # Wait, make_features.py used np.savez. 
-    # If X is sparse, np.savez saves it as a 0-d array containing the matrix.
-    # We need to extract it properly.
-    
-    # Actually, let's check how it was saved. 
-    # make_features.py: np.savez(..., X=X_train_tfidf, y=y_train)
-    # If X_train_tfidf is sparse, this might be tricky.
-    # Standard practice for sparse matrices is scipy.sparse.save_npz.
-    # However, since we are just reading what was written, let's try to handle what's there.
-    # If it's a 0-d array wrapping the sparse matrix:
+    # Handle sparse matrix wrapped in 0-d array
     if X_train.ndim == 0:
         X_train = X_train.item()
     if X_test.ndim == 0:
@@ -48,9 +34,25 @@ def load_data(processed_dir):
         
     return X_train, y_train, X_test, y_test
 
-def train_model(model_name, config):
-    processed_dir = config["data"]["processed_data_dir"]
-    models_dir = config["results"]["models_dir"]
+def train_model(model_name, config, return_metrics=False, processed_dir=None, models_dir=None):
+    """
+    Train and evaluate a model.
+    
+    Args:
+        model_name: Name of the model to train (key in config['models'] or specific supported name)
+        config: Configuration dictionary
+        return_metrics: Whether to return metrics dictionary and predictions (default: False)
+        processed_dir: Override for processed data directory (uses config if None)
+        models_dir: Override for models output directory (uses config if None)
+        
+    Returns:
+        If return_metrics is True: (model, metrics_dict, y_pred)
+        Else: None
+    """
+    if processed_dir is None:
+        processed_dir = config["data"]["processed_data_dir"]
+    if models_dir is None:
+        models_dir = config["results"]["models_dir"]
     os.makedirs(models_dir, exist_ok=True)
     
     X_train, y_train, X_test, y_test = load_data(processed_dir)
@@ -60,6 +62,10 @@ def train_model(model_name, config):
     
     if model_name == "logistic_regression":
         model = LogisticRegression(**model_params)
+    elif model_name == "ridge_classifier":
+        # RidgeClassifier doesn't take all same params as LogReg, so filter or use defaults if needed
+        # Assuming params in config are compatible or empty
+        model = RidgeClassifier(**model_params)
     elif model_name == "random_forest":
         model = RandomForestClassifier(**model_params)
     elif model_name == "knn":
@@ -83,9 +89,17 @@ def train_model(model_name, config):
     joblib.dump(model, save_path)
     print(f"Model saved to {save_path}")
 
+    if return_metrics:
+        metrics = {
+            "accuracy": acc,
+            "report": classification_report(y_test, y_pred, output_dict=True),
+            "confusion_matrix": confusion_matrix(y_test, y_pred)
+        }
+        return model, metrics, y_pred
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train a model based on config")
-    parser.add_argument("--model", type=str, required=True, help="Model name (e.g., logistic_regression, lgbm)")
+    parser.add_argument("--model", type=str, required=True, help="Model name (e.g., logistic_regression, ridge_classifier, lgbm)")
     args = parser.parse_args()
     
     config = load_config()

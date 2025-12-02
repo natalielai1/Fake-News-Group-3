@@ -104,7 +104,7 @@ def create_word2vec_features(texts, model=None, vector_size=100):
     return X, model
 
 
-def run_feature_engineering():
+def run_feature_engineering(processed_dir="data/processed"):
     """
     Complete feature engineering pipeline:
     1. Load train/test datasets
@@ -113,10 +113,13 @@ def run_feature_engineering():
     4. Train Word2Vec on train text only
     5. Generate Sentence2Vec features for train and test
     6. Save features + vectorizer/model to data/processed/
+    
+    Args:
+        processed_dir: Directory containing train.csv and test.csv, and where output will be saved
     """
     print("Loading train/test split...")
     try:
-        train_df, test_df = load_split_data()
+        train_df, test_df = load_split_data(processed_dir)
     except FileNotFoundError as e:
         print(e)
         return
@@ -148,7 +151,6 @@ def run_feature_engineering():
     X_test_w2v = np.array([get_sentence_vector(text, w2v_model) for text in X_test_text_cleaned])
 
     # Ensure directory exists
-    processed_dir = "data/processed"
     os.makedirs(processed_dir, exist_ok=True)
 
     print("Saving TF-IDF features...")
