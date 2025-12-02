@@ -8,7 +8,13 @@ data:
   
   # Dataset filenames
   kaggle_dataset: "WELFake_Dataset.csv"
-  cleaned_dataset: "preprocessed_dataset.csv"
+  cleaned_dataset: "cleaned_dataset.csv"
+
+# Data columns - explicitly define which columns are used
+columns:
+  feature_column: "text"      # Column to use as input features (X)
+  label_column: "label"       # Column to use as target labels (y) - 0=Real, 1=Fake
+  id_column: "id"             # Unique identifier column
 
 # Preprocessing settings
 preprocessing:
