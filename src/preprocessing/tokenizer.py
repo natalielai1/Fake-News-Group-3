@@ -39,47 +39,179 @@ WORD_RE = re.compile(r"[A-Za-z0-9']+")
 # English stopwords
 STOPWORDS = set(stopwords.words('english'))
 
+# Wire services and news organizations that can leak source identity
+WIRE_SERVICES = (
+    r"Reuters|AP|AFP|UPI|BBC|CNN|Al Jazeera|Xinhua|IANS|PTI|ANI|dpa|"
+    r"Associated Press|Agence France-Presse|United Press International"
+)
+
+# Boilerplate patterns that indicate source/website identity
+# These will cause entire lines to be removed if matched
+BOILERPLATE_PATTERNS = [
+    # Image credits (case-insensitive)
+    r"getty\s*images",
+    r"flickr",
+    r"shutterstock",
+    r"ap\s*photo",
+    r"reuters\s*/",
+    r"photo\s*:\s*\w+",
+    r"image\s*:\s*\w+",
+    r"featured\s*image",
+    r"stock\s*photo",
+    
+    # Call-to-action boilerplate
+    r"click\s*here\s*to",
+    r"donate\s*(now|today|here)?",
+    r"subscribe\s*(now|today|here|to)?",
+    r"follow\s*us\s*(on)?",
+    r"share\s*this",
+    r"sign\s*up\s*(for|here|now)?",
+    r"join\s*(our|the)\s*(newsletter|mailing)",
+    r"support\s*(us|our)",
+    
+    # Website navigation
+    r"read\s*more\s*(here|below|at)?",
+    r"related\s*:",
+    r"see\s*also\s*:",
+    r"continue\s*reading",
+    r"advertisement",
+    r"sponsored\s*content",
+    
+    # Social media links
+    r"twitter\.com/",
+    r"facebook\.com/",
+    r"instagram\.com/",
+    r"youtube\.com/",
+    r"@\w{3,15}\b",  # Twitter handles
+    
+    # News website boilerplate
+    r"breitbart\s*texas",
+    r"breitbart\s*news",
+    r"infowars",
+    r"natural\s*news",
+    r"the\s*common\s*sense\s*show",
+    
+    # Reuters-specific footer patterns
+    r"reporting\s*by\s*.{5,50};\s*editing\s*by",
+    r"compiled\s*by\s*.{5,30}\s*in\s*\w+",
+    r"additional\s*reporting\s*by",
+]
+
+# Compile boilerplate patterns for efficiency
+_BOILERPLATE_RE = re.compile(
+    r"|".join(BOILERPLATE_PATTERNS),
+    re.IGNORECASE
+)
+
+
+def remove_wire_attribution(text: str) -> str:
+    """
+    Remove wire service attribution from the start of text.
+    
+    Handles patterns like:
+    - "WASHINGTON (Reuters) - "
+    - "WASHINGTON/MOSCOW/BRUSSELS (Reuters) - "
+    - "NEW YORK, Dec 2 (Reuters) - "
+    - "(Reuters) - "
+    - "By Reuters"
+    - "- Reuters" at end of paragraphs
+    
+    Args:
+        text: Input text string
+        
+    Returns:
+        Text with wire service attribution removed
+    """
+    if not text:
+        return ""
+    
+    # Pattern 1: Location (Source) - at start of text
+    # Uses [^(]* to match ANY characters before the first parenthesis
+    # This handles slashes, commas, dates, etc. in location names
+    start_pattern = rf"^[^(]*\(({WIRE_SERVICES})\)\s*[-–—]?\s*"
+    text = re.sub(start_pattern, "", text, flags=re.IGNORECASE)
+    
+    # Pattern 2: "By Reuters" or "By AP" etc. at start
+    by_pattern = rf"^By\s+({WIRE_SERVICES})\s*[-–—]?\s*"
+    text = re.sub(by_pattern, "", text, flags=re.IGNORECASE)
+    
+    # Pattern 3: "- Reuters" or "— Reuters" at end of paragraphs/text
+    end_pattern = rf"\s*[-–—]\s*({WIRE_SERVICES})\s*$"
+    text = re.sub(end_pattern, "", text, flags=re.IGNORECASE | re.MULTILINE)
+    
+    # Pattern 4: Standalone "(Reuters)" without the dash
+    standalone_pattern = rf"^\s*\(({WIRE_SERVICES})\)\s*"
+    text = re.sub(standalone_pattern, "", text, flags=re.IGNORECASE)
+    
+    return text
+
+
+def remove_boilerplate_lines(text: str) -> str:
+    """
+    Remove entire lines containing boilerplate content.
+    
+    This removes lines with:
+    - Image credits (Getty Images, Flickr, etc.)
+    - Call-to-action content (donate, subscribe, follow us)
+    - Website navigation (read more, related, see also)
+    - Social media links (twitter.com, @username)
+    - News organization identifiers
+    
+    Args:
+        text: Input text string
+        
+    Returns:
+        Text with boilerplate lines removed
+    """
+    if not text:
+        return ""
+    
+    # Split into lines
+    lines = text.split('\n')
+    
+    # Filter out lines containing boilerplate patterns
+    cleaned_lines = []
+    for line in lines:
+        # Skip empty lines
+        if not line.strip():
+            cleaned_lines.append(line)
+            continue
+        
+        # Check if line contains boilerplate
+        if not _BOILERPLATE_RE.search(line):
+            cleaned_lines.append(line)
+    
+    return '\n'.join(cleaned_lines)
+
 
 def clean_source_text(text: str) -> str:
     """
-    Remove source attribution (e.g. 'WASHINGTON (Reuters) - ') from the start of text.
-    This is critical to prevent data leakage where the source name reveals the label.
+    Remove source attribution and boilerplate from text.
+    
+    This is critical to prevent data leakage where the source name or
+    website-specific patterns reveal the label.
+    
+    Removes:
+    - Wire service attributions (Reuters, AP, AFP, etc.)
+    - Image credits (Getty Images, Flickr, etc.)
+    - Call-to-action boilerplate (donate, subscribe, follow us)
+    - Website navigation (read more, related, see also)
+    - Social media links
+    
+    Args:
+        text: Input text string
+        
+    Returns:
+        Cleaned text with source markers removed
     """
     if text is None:
         return ""
-        
+    
     text = str(text)
+    text = remove_wire_attribution(text)
+    text = remove_boilerplate_lines(text)
     
-    # Pattern 1: "CITY (Reuters) - " or "(Reuters) - "
-    # Matches start of string, optional location, (Source), hyphen
-    # Be careful not to delete too much.
-    # Look for (Source) followed by -
-    
-    # Regex explanation:
-    # ^                 Start of string
-    # (?:[A-Z\s]+)?     Optional location (UPPERCASE text + spaces) - non-capturing
-    # \s*               Optional spaces
-    # \(                Literal (
-    # (?:Reuters|AFP|AP|CNN|BBC|Al Jazeera)  Common news sources
-    # \)                Literal )
-    # \s*               Optional spaces
-    # -                 Hyphen
-    # \s*               Optional spaces
-    
-    # More aggressive pattern: Remove anything up to the first " - " if it contains "Reuters"
-    
-    # Specific Reuters cleaning (most common leak)
-    # Matches: "WASHINGTON (Reuters) - ", "BERLIN (Reuters) - ", "(Reuters) -"
-    # Also includes AP, AFP, UPI which are common in real news datasets
-    # Now robust to case variations like "REUTERS", "reuters"
-    reuters_pattern = r"^([A-Z\s]+)?\s*\((Reuters|AP|AFP|UPI)\)\s*-\s*"
-    text = re.sub(reuters_pattern, "", text, flags=re.IGNORECASE)
-    
-    # Also just "Reuters" at the very start if followed by punctuation or space
-    # But be careful not to remove "Reuters reported that..." if it's part of the sentence structure.
-    # The "(Reuters) -" pattern is the standard byline.
-    
-    return text
+    return text.strip()
 
 
 def simple_tokenize(text: str) -> List[str]:
