@@ -70,7 +70,7 @@ models:
     embedding_dim: 100
     hidden_dim: 64
     dropout: 0.5
-    epochs: 5
+    epochs: 100
     batch_size: 32
 
 # Results and outputs
