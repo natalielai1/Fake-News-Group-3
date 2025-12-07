@@ -53,3 +53,4 @@ print(df[df['coef'] < 0].head(20))
 if __name__ == "__main__":
     manual_inspection()
 
+
